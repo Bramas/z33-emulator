@@ -26,19 +26,25 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 
 #[derive(Default, Serialize)]
 struct Output {
-    ast: Option<String>,
-    preprocessed: Option<String>,
-    memory: Vec<(C::Address, String)>,
-    labels: HashMap<String, C::Address>,
+    preprocessed: Vec<(C::Address, String)>,
+    memory: Option<Vec<(u32, String)>>,
     error: Option<String>,
     registers: Option<String>,
+    instructions: Option<Vec<String>>,
 }
 
 fn computer_steps(computer: &mut Computer, steps: u32) -> (Vec<String>, Result<(), ProcessorError>) {
     let mut instructions = Vec::<String>::new();
 
     for _ in 0..steps {
-        instructions.push(format!("{:?}", computer.next_instruction().unwrap_or(String::from("Invalid instruction"))));
+        let next_inst = computer.next_instruction();
+        match next_inst {
+            Ok(inst) => instructions.push(format!("{:?}", inst)),
+            Err(e) => {
+                instructions.push(String::from("Invalid instruction"));
+                return (instructions, Err(e))
+            }
+        }
         match computer.step() {
             Ok(_) => {}
             Err(ProcessorError::Reset) => return (instructions, Ok(())),
@@ -72,7 +78,8 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
         }
     };
 
-    output.preprocessed = Some(source.clone());
+    //output.preprocessed = Some(source.clone());
+
     let source = source.as_str();
     let mut files = SimpleFiles::new();
     let file_id = files.add("preprocessed", source);
@@ -115,25 +122,6 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
             return Ok(serde_wasm_bindgen::to_value(&output)?);
         }
     };
-
-    let ast = program.to_node();
-
-    // Transform the AST relative locations to absolute ones
-    let ast = ast.map_location(&AbsoluteLocation::default());
-
-    output.ast = Some(format!("{ast}"));
-
-    /*let layout = layout(program.inner);
-
-    if let Err(e) = layout {
-        output.error = Some(format!("{e}"));
-        return Ok(serde_wasm_bindgen::to_value(&output)?);
-    }
-
-    let layout = layout.unwrap();
-    output.memory = layout.memory_report();
-    output.labels = layout.labels;
-*/
 
     let parent = AbsoluteLocation::<()>::default();
     let program = program.map_location(&parent);
@@ -195,25 +183,41 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
     match status {
         Ok(()) => {},
         Err(e) => {
-            output.error = Some(format!("{e:#?}\n\n Instructions:\n{}", steps.join("\n")));
+            output.error = Some(format!("{e:#?}"));
+            output.instructions = Some(steps);
             return Ok(serde_wasm_bindgen::to_value(&output)?);
         }
     };
+    output.instructions = Some(steps);
 
     let mut memory = Vec::new();
     for i in (9980..10000).rev() {
         match computer.memory.get(i) {
             Ok(value) => match value {
                 //Empty => break,
-                _ => memory.push(format!("{}: {:?}", i, value)),
+                _ => memory.push((i, format!("{:?}", value))),
             },
             Err(_) => { 
-                memory.push(format!("Err"));  //break
+                memory.push((0, format!("Err")));  //break
             },
         }
     }
-    output.registers = Some(format!("<b><span style=\"color:#35cc5d\">Execution: OK</span></b>\n\n{:?}\n\n{}", computer.registers,
-    memory.join("\n")));
+    output.registers = Some(format!("<b><span style=\"color:#35cc5d\">Execution: OK</span></b>\n\n{:?}", computer.registers));
+
+    output.memory = Some(memory);
+
+    
+    let program = parse(&source).unwrap();
+    let layout = layout(program.inner);
+
+    if let Err(e) = layout {
+        output.error = Some(format!("{e}"));
+        return Ok(serde_wasm_bindgen::to_value(&output)?);
+    }
+
+    let layout = layout.unwrap();
+    output.preprocessed = layout.memory_report();
+    
 
     Ok(serde_wasm_bindgen::to_value(&output)?)
 }
