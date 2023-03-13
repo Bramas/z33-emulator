@@ -11,12 +11,11 @@ const samples = {
 };
 
 type Output = {
-  ast?: string;
-  preprocessed?: string;
+  preprocessed?: Array<[number, string]>;
   error?: string;
   memory?: Array<[number, string]>;
-  labels?: Record<string, number>;
   registers?: string;
+  instructions?: Array<string>;
 };
 
 const createSection = (title: string, parent: Element): HTMLOutputElement => {
@@ -55,9 +54,8 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
 
   const consoleOutput = createErrorSection("Console", result);
   const memoryOutput = createSection("Memory", result);
-  const labelsOutput = createSection("Labels", result);
+  const instructionsOutput = createSection("Instructions", result);
   const preprocessorOutput = createSection("Preprocessor", result);
-  const astOutput = createSection("AST", result);
   consoleOutput.innerHTML = "Loading compiler...";
 
   document.body.appendChild(root);
@@ -107,10 +105,16 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
       consoleOutput.innerHTML = v;
     }
 
-    astOutput.value = output.ast || "-";
-    preprocessorOutput.value = output.preprocessed || "-";
-    memoryOutput.value = output.memory.map(([k, v]) => `${k}\t${v}`).join("\n");
-    labelsOutput.value = JSON.stringify(Object.fromEntries([...output.labels]));
+    preprocessorOutput.value = (output.preprocessed
+      ? output.preprocessed.map(([k, v]) => `${k}\t${v}`).join("\n")
+      : "-"
+    );
+
+    instructionsOutput.value = (output.instructions || ["-"]).join("\n");
+    memoryOutput.value = (output.memory
+      ? output.memory.map(([k, v]) => `${k}:\t${v}`).join("\n") 
+      : "-"
+    );
   };
 
   model.onDidChangeContent(() => update());
