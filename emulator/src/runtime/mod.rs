@@ -109,6 +109,16 @@ impl Computer {
             .map_err(|_| Exception::InvalidInstruction.into())
     }
 
+    pub fn next_instruction(&mut self) -> Result<String> {
+        let address = Ind(Reg::PC).resolve_address(&self.registers)?;
+        let cell = self.memory.get(address)?;
+        let strInst = match cell.extract_instruction() {
+            Ok(inst) => Ok(format!("{}", inst)),
+            Err(_) => Ok(format!("Invalid Instruction")),
+        };
+        return strInst;
+    }
+
     #[tracing::instrument(skip(self), level = "debug", fields(cost))]
     pub fn step(&mut self) -> Result<()> {
         // Wrapping the part that can be recovered from in another function

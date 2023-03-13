@@ -9,6 +9,8 @@ import { terser } from "rollup-plugin-terser";
 import html from "@rollup/plugin-html";
 import dev from "rollup-plugin-dev";
 import { fileURLToPath } from "url";
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
 
 import cssnano from "cssnano";
 
@@ -34,6 +36,12 @@ export default {
     resolve({
       extensions: [".js", ".ts"],
     }),
+    commonjs({
+      //include: ["node_modules/ansi-to-html/**"]
+      requireReturnsDefault: true,
+
+    }),
+    json(),
     postcss({ plugins: [cssnano()], extract: true }),
     webworker({
       inline: false,

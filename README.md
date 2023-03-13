@@ -99,6 +99,21 @@ git push --tags
 
 </details>
 
+## Experimental web emulator
+
+You need to install the wasm32 target
+```sh
+rustup target add wasm32-unknown-unknown
+```
+
+Then go to the `web` folder, install, and run the server
+```sh
+cd web
+npm install
+npm run start
+```
+
+
 # License
 
 [MIT](./LICENSE) © [Quentin Gliech](https://sandhose.fr)

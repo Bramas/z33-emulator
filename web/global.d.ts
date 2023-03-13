@@ -17,6 +17,12 @@ declare module "z33-web-bindings" {
   export default Loader;
 }
 
+declare module "ansi-to-html" {
+  type Exports = typeof import("ansi-to-html");
+  const Loader: () => ((String) => String);
+  export default Loader;
+}
+
 declare module "../../samples/*" {
   const Sample: string;
   export default Sample;

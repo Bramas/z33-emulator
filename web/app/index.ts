@@ -1,6 +1,9 @@
 import "./style.css";
 import bindings from "z33-web-bindings";
 
+import AnsiConverter from 'ansi-to-html';
+const ansiConverter = new AnsiConverter();
+
 const samples = {
   directives: () => import("../../samples/directives.S"),
   fact: () => import("../../samples/fact.S"),
@@ -13,6 +16,7 @@ type Output = {
   error?: string;
   memory?: Array<[number, string]>;
   labels?: Record<string, number>;
+  registers?: string;
 };
 
 const createSection = (title: string, parent: Element): HTMLOutputElement => {
@@ -20,6 +24,18 @@ const createSection = (title: string, parent: Element): HTMLOutputElement => {
   const heading = document.createElement("h4");
   heading.appendChild(document.createTextNode(title));
   const output = document.createElement("output");
+  section.appendChild(heading);
+  section.appendChild(output);
+  parent.appendChild(section);
+  return output;
+};
+
+
+const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
+  const section = document.createElement("section");
+  const heading = document.createElement("h4");
+  heading.appendChild(document.createTextNode(title));
+  const output = document.createElement("div");
   section.appendChild(heading);
   section.appendChild(output);
   parent.appendChild(section);
@@ -37,12 +53,12 @@ const createSection = (title: string, parent: Element): HTMLOutputElement => {
   result.classList.add("result");
   root.appendChild(result);
 
-  const consoleOutput = createSection("Console", result);
+  const consoleOutput = createErrorSection("Console", result);
   const memoryOutput = createSection("Memory", result);
   const labelsOutput = createSection("Labels", result);
   const preprocessorOutput = createSection("Preprocessor", result);
   const astOutput = createSection("AST", result);
-  consoleOutput.value = "Loading compiler...";
+  consoleOutput.innerHTML = "Loading compiler...";
 
   document.body.appendChild(root);
 
@@ -83,7 +99,14 @@ const createSection = (title: string, parent: Element): HTMLOutputElement => {
   const update = () => {
     const value = model.getValue();
     const output: Output = dump(value);
-    consoleOutput.value = output.error || "-";
+    if(output.error) {
+      let v = output.error.replace(/\\u\{1b\}/g, "\\x1b");
+      consoleOutput.innerHTML = ansiConverter.toHtml(v);
+    } else {
+      let v = (output.registers || '-').replace(/\\u\{1b\}/g, "\\x1b");
+      consoleOutput.innerHTML = v;
+    }
+
     astOutput.value = output.ast || "-";
     preprocessorOutput.value = output.preprocessed || "-";
     memoryOutput.value = output.memory.map(([k, v]) => `${k}\t${v}`).join("\n");
