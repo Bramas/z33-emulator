@@ -33,13 +33,14 @@ struct Output {
     instructions: Option<Vec<String>>,
 }
 
+
 fn computer_steps(computer: &mut Computer, steps: u32) -> (Vec<String>, Result<(), ProcessorError>) {
     let mut instructions = Vec::<String>::new();
 
     for _ in 0..steps {
         let next_inst = computer.next_instruction();
         match next_inst {
-            Ok(inst) => instructions.push(format!("{:?}", inst)),
+            Ok(inst) => instructions.push(format!("{}", inst)),
             Err(e) => {
                 instructions.push(String::from("Invalid instruction"));
                 return (instructions, Err(e))
@@ -78,14 +79,14 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
         }
     };
 
-    //output.preprocessed = Some(source.clone());
+
+    // Parse the source code
 
     let source = source.as_str();
     let mut files = SimpleFiles::new();
     let file_id = files.add("preprocessed", source);
 
     let program = parse(&source); // TODO: the error is tied to the input
-
 
     let program = match program {
         Ok(p) => p,
@@ -123,6 +124,19 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
         }
     };
 
+
+    // Layout of the Preprocessed Program
+    let layout = layout(parse(&source).unwrap().inner);
+    if let Err(e) = layout {
+        output.error = Some(format!("{e}"));
+        return Ok(serde_wasm_bindgen::to_value(&output)?);
+    }
+
+    let layout = layout.unwrap();
+    output.preprocessed = layout.memory_report();
+
+
+    // Compile the Program
     let parent = AbsoluteLocation::<()>::default();
     let program = program.map_location(&parent);
 
@@ -178,8 +192,10 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
             return Ok(serde_wasm_bindgen::to_value(&output)?);
         }
     };
-    let (steps, status) = computer_steps(&mut computer, 10000);
 
+    // Execute the program
+
+    let (steps, status) = computer_steps(&mut computer, 1000);
     match status {
         Ok(()) => {},
         Err(e) => {
@@ -205,19 +221,6 @@ pub fn dump(source: &str) -> Result<JsValue, JsValue> {
     output.registers = Some(format!("<b><span style=\"color:#35cc5d\">Execution: OK</span></b>\n\n{:?}", computer.registers));
 
     output.memory = Some(memory);
-
-    
-    let program = parse(&source).unwrap();
-    let layout = layout(program.inner);
-
-    if let Err(e) = layout {
-        output.error = Some(format!("{e}"));
-        return Ok(serde_wasm_bindgen::to_value(&output)?);
-    }
-
-    let layout = layout.unwrap();
-    output.preprocessed = layout.memory_report();
-    
 
     Ok(serde_wasm_bindgen::to_value(&output)?)
 }

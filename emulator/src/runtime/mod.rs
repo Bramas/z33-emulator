@@ -114,7 +114,7 @@ impl Computer {
         let cell = self.memory.get(address)?;
         let strInst = match cell.extract_instruction() {
             Ok(inst) => Ok(format!("{}", inst)),
-            Err(_) => Ok(format!("Invalid Instruction")),
+            Err(e) => Err( ProcessorError::CellError(e) )
         };
         return strInst;
     }

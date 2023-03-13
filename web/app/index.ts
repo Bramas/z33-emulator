@@ -1,6 +1,6 @@
 import "./style.css";
 import bindings from "z33-web-bindings";
-
+import registerLanguage from './instructions';
 import AnsiConverter from 'ansi-to-html';
 const ansiConverter = new AnsiConverter();
 
@@ -65,7 +65,9 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
   const monaco = await import("./monaco");
   editorContainer.classList.remove("loading");
 
-  const model = monaco.editor.createModel("", "text/plain");
+  registerLanguage(monaco);
+
+  const model = monaco.editor.createModel("", "z33");
 
   const selector = document.createElement("div");
   selector.classList.add("selector");
@@ -76,8 +78,10 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
     const button = document.createElement("button");
     button.appendChild(document.createTextNode(key));
     button.addEventListener("click", async () => {
-      const program = await load();
-      model.setValue(program.default);
+      if(window.confirm("Are you sure you want to load a sample? (it will replace your current buffer)")) {
+        const program = await load();
+        model.setValue(program.default);
+      }
     });
     button.addEventListener("mouseover", () => load()); // Preload on mouseover
     selector.appendChild(button);
@@ -90,7 +94,8 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
   monaco.editor
     .create(editor, {
       automaticLayout: true,
-      theme: "vs-dark",
+      theme: "z33-theme",
+      quickSuggestions: { other: true, strings: true }
     })
     .setModel(model);
 
@@ -117,7 +122,24 @@ const createErrorSection = (title: string, parent: Element): HTMLDivElement => {
     );
   };
 
-  model.onDidChangeContent(() => update());
+  model.onDidChangeContent(debounce(() => update(), 700));
 
   update();
 })();
+
+// Debounce function
+function debounce(func: Function, wait: number, immediate: boolean = false) {
+  let timeout: any;
+  return function () {
+    const context = this;
+    const args = arguments;
+    const later = function () {
+      timeout = null;
+      if (!immediate) func.apply(context, args);
+    };
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+    if (callNow) func.apply(context, args);
+  };
+}
