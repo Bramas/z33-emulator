@@ -53,7 +53,9 @@ export default {
     }),
     rust(),
     terser(),
-    html(),
+    html({
+      title: "Z33 Emulator",
+    }),
     dev("dist"),
   ],
 };
