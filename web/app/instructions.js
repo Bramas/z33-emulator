@@ -78,17 +78,47 @@ export default function(monaco) {
        
     // Register a tokens provider for the language
     monaco.languages.setMonarchTokensProvider("z33", {
+		includeLF: true,
         tokenizer: {
             root: [
-                [new RegExp('\\b('+Instructions.join('|')+')\\b'), "command"],
-                [/%(a|b|sp|pc)/, "register"],
-                [/[0-9]+/, "number"],
+                [new RegExp('\\s('+Instructions.join('|')+')\\b'), "command", "@command"],
+                [new RegExp('^('+Instructions.join('|')+')\\b'), "command", "@command"],
                 [/[^:]+:/, "label"],
                 [/#\w+/, "macro"],
                 [/\.\w+/, "macro"],
-                [/\/\/.*/, "comment"],
-                [/\[|\]|,/,"operator"]
+                {include: '@constants'},
+                {include: '@comments'},
             ],
+            command: [
+                [/\n$/, "endofline", "@pop"],
+                [/(\w|%)+[^a-zA-Z0-9,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
+                [/\[[^\]]*\][^a-zA-Z0-9,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
+                [/(\w|%)+[^a-zA-Z0-9,\/]+\[[^\]]*\]/, "error-missing-comma", "@pop"],
+                [/\[/,"operator", "@idx"],
+                [/,/,"operator"],
+                {include: '@constants'},
+                {include: '@comments'},
+                {include: '@registers'},
+            ],
+            constants: [
+                [/[0-9]+/, "number"],
+            ],
+            comments: [
+                [/\/\/.*/, "comment"],
+            ],
+			registers: [
+                [/%(a|b|sp|pc)\b/, "register"],
+                [/%[^ab]\b/, "error"],
+                [/%s[^p]/, "error"],
+                [/%p[^c]/, "error"],
+                [/%[^absp]/, "error"],
+			],
+			idx: [
+				[/\]/, "operator", "@pop"],
+				[/[^a-zA-Z0-9\-+% \t\]][^\n]*/, {token: "error", next: '@pop'} ],
+                {include: '@constants'},
+                {include: '@registers'},
+			],
         },
     });
     monaco.editor.defineTheme("z33-theme", {
@@ -102,6 +132,8 @@ export default function(monaco) {
             { token: "comment", foreground: "737373"},
             { token: "macro", foreground: "826a51"},
             { token: "operator", foreground: "b9b900"},
+            { token: "error", foreground: "ff0000"},
+			{ token: "error-missing-comma", foreground: "ff0000"},
         ],
         colors: {
             //"editor.foreground": "#000000",
