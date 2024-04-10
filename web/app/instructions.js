@@ -83,7 +83,7 @@ export default function(monaco) {
             root: [
                 [new RegExp('\\s('+Instructions.join('|')+')\\b'), "command", "@command"],
                 [new RegExp('^('+Instructions.join('|')+')\\b'), "command", "@command"],
-                [/[\w_]+:/, "label"],
+                [/[\w\_]+:/, "label"],
                 [/#\w+/, "macro"],
                 [/\.\w+/, "macro"],
                 {include: '@constants'},
