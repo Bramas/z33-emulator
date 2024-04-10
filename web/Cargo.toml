@@ -6,6 +6,9 @@ edition = "2021"
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ["-Oz", "--enable-mutable-globals"]
 
+[workspace]
+resolver = "2"
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

@@ -83,7 +83,7 @@ export default function(monaco) {
             root: [
                 [new RegExp('\\s('+Instructions.join('|')+')\\b'), "command", "@command"],
                 [new RegExp('^('+Instructions.join('|')+')\\b'), "command", "@command"],
-                [/[\w\_]+:/, "label"],
+                [/[\w_]+:/, "label"],
                 [/#\w+/, "macro"],
                 [/\.\w+/, "macro"],
                 {include: '@constants'},
@@ -91,9 +91,9 @@ export default function(monaco) {
             ],
             command: [
                 [/\n$/, "endofline", "@pop"],
-                [/(\w|%)+[^a-zA-Z0-9,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
-                [/\[[^\]]*\][^a-zA-Z0-9,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
-                [/(\w|%)+[^a-zA-Z0-9,\/]+\[[^\]]*\]/, "error-missing-comma", "@pop"],
+                [/(\w|%)+[^a-zA-Z0-9_,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
+                [/\[[^\]]*\][^a-zA-Z0-9_,\/]+(\w|%)+/, "error-missing-comma", "@pop"],
+                [/(\w|%)+[^a-zA-Z0-9_,\/]+\[[^\]]*\]/, "error-missing-comma", "@pop"],
                 [/\[/,"operator", "@idx"],
                 [/,/,"operator"],
                 {include: '@constants'},
