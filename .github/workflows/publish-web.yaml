@@ -17,7 +17,9 @@ name: Publish the web app on GitHub Pages
 jobs:
   publish:
     name: Publish
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout the code
